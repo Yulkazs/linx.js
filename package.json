@@ -1,0 +1,49 @@
+{
+  "name": "linx",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write src/**/*.ts",
+    "prepublishOnly": "npm run build && npm test",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [],
+  "author": "Yulkaz",
+  "license": "ISC",
+  "description": "Pagination made simpler, faster & better.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yulkaz/linx.js"
+  },
+  "bugs": {
+    "url": "https://github.com/yulkaz/linx.js/issues"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "peerDependencies": {
+    "discord.js": "^14.21.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "eslint": "^9.32.0",
+    "jest": "^30.0.5",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.6.2",
+    "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
