@@ -1,0 +1,21 @@
+{
+  "name": "linx-test-bot",
+  "version": "1.0.0",
+  "description": "Test bot for linx.js pagination library",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "deploy": "node src/deploy-commands.js"
+  },
+  "keywords": ["discord", "bot", "linx", "pagination"],
+  "author": "Your Name",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.21.0",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
