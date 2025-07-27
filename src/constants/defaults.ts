@@ -50,11 +50,47 @@ export const DEFAULT_BUTTONS = {
   LAST_LABEL: 'Last',
   STOP_LABEL: 'Stop',
 
-  get PREVIOUS_EMOJI() { return getLinxConfig().emojis.previous; },
-  get NEXT_EMOJI() { return getLinxConfig().emojis.next; },
-  get FIRST_EMOJI() { return getLinxConfig().emojis.first; },
-  get LAST_EMOJI() { return getLinxConfig().emojis.last; },
-  get STOP_EMOJI() { return getLinxConfig().emojis.close; }
+  get PREVIOUS_EMOJI() { 
+    try {
+      const config = getLinxConfig();
+      // Use Unicode fallback if custom emoji fails
+      return config.emojis.previous || '⬅️';
+    } catch {
+      return '⬅️';
+    }
+  },
+  get NEXT_EMOJI() { 
+    try {
+      const config = getLinxConfig();
+      return config.emojis.next || '➡️';
+    } catch {
+      return '➡️';
+    }
+  },
+  get FIRST_EMOJI() { 
+    try {
+      const config = getLinxConfig();
+      return config.emojis.first || '⏪';
+    } catch {
+      return '⏪';
+    }
+  },
+  get LAST_EMOJI() { 
+    try {
+      const config = getLinxConfig();
+      return config.emojis.last || '⏩';
+    } catch {
+      return '⏩';
+    }
+  },
+  get STOP_EMOJI() { 
+    try {
+      const config = getLinxConfig();
+      return config.emojis.close || '❌';
+    } catch {
+      return '❌';
+    }
+  }
 } as const;
 
 export const DEFAULT_SELECT_MENU = {

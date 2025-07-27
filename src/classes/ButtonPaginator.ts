@@ -52,39 +52,52 @@ export class ButtonPaginator<T = any> extends BasePaginator<T> {
   protected buildComponents(): ActionRowBuilder<ButtonBuilder>[] {
     const row = new ActionRowBuilder<ButtonBuilder>();
 
-    // Previous button
-    const previousButton = ComponentBuilder.createButton({
-      customId: CUSTOM_IDS.BUTTON_PREVIOUS,
-      label: this.buttonOptions.previousLabel,
-      emoji: this.buttonOptions.previousEmoji,
-      style: this.buttonOptions.buttonStyle,
-      disabled: this.buttonOptions.disableButtonsAtEdges && !this.hasPreviousPage()
-    });
+    // Previous button - Build it step by step
+    const previousButton = new ButtonBuilder()
+      .setCustomId(CUSTOM_IDS.BUTTON_PREVIOUS)
+      .setStyle(this.buttonOptions.buttonStyle)
+      .setDisabled(this.buttonOptions.disableButtonsAtEdges && !this.hasPreviousPage());
 
-    // Next button
-    const nextButton = ComponentBuilder.createButton({
-      customId: CUSTOM_IDS.BUTTON_NEXT,
-      label: this.buttonOptions.nextLabel,
-      emoji: this.buttonOptions.nextEmoji,
-      style: this.buttonOptions.buttonStyle,
-      disabled: this.buttonOptions.disableButtonsAtEdges && !this.hasNextPage()
-    });
+    // Add label or emoji (ensure at least one exists)
+    if (this.buttonOptions.previousLabel) {
+      previousButton.setLabel(this.buttonOptions.previousLabel);
+    }
+    if (this.buttonOptions.previousEmoji) {
+      previousButton.setEmoji(this.buttonOptions.previousEmoji);
+    }
+    // Fallback if neither label nor emoji is set
+    if (!this.buttonOptions.previousLabel && !this.buttonOptions.previousEmoji) {
+      previousButton.setLabel('Previous');
+    }
 
-    row.addComponents(previousButton, nextButton);
+    // Next button - Build it step by step
+    const nextButton = new ButtonBuilder()
+      .setCustomId(CUSTOM_IDS.BUTTON_NEXT)
+      .setStyle(this.buttonOptions.buttonStyle)
+      .setDisabled(this.buttonOptions.disableButtonsAtEdges && !this.hasNextPage());
+
+    // Add label or emoji (ensure at least one exists)
+    if (this.buttonOptions.nextLabel) {
+      nextButton.setLabel(this.buttonOptions.nextLabel);
+    }
+    if (this.buttonOptions.nextEmoji) {
+      nextButton.setEmoji(this.buttonOptions.nextEmoji);
+    }
+    // Fallback if neither label nor emoji is set
+    if (!this.buttonOptions.nextLabel && !this.buttonOptions.nextEmoji) {
+      nextButton.setLabel('Next');
+    }
 
     // Add page counter button if enabled
     if (this.buttonOptions.showPageCounter) {
-      const pageCounterButton = ComponentBuilder.createButton({
-        customId: `${CUSTOM_IDS.BUTTON_PREVIOUS}_counter`,
-        label: `${this.state.currentPage + 1} / ${this.state.totalPages}`,
-        style: ButtonStyle.Secondary,
-        disabled: true
-      });
+      const pageCounterButton = new ButtonBuilder()
+        .setCustomId(`linx_counter_${Date.now()}`) // Unique ID to avoid conflicts
+        .setLabel(`${this.state.currentPage + 1} / ${this.state.totalPages}`)
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(true);
 
-      // Add all buttons to the row
       row.addComponents(previousButton, pageCounterButton, nextButton);
     } else {
-      // Add only prev and next buttons
       row.addComponents(previousButton, nextButton);
     }
 
