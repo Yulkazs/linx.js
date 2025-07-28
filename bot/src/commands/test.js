@@ -24,7 +24,9 @@ module.exports = {
                 showPageCounter: true,
                 previous: ['Previous', '⬅️'],
                 next: ['Next', '➡️'],
-                afterTimeout: 'delete'
+                afterTimeout: 'disable',
+                first: ['First', '⏪'],
+                last: ['Last', '⏩'],
             });
             
             // Start the paginator

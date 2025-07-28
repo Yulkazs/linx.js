@@ -1,5 +1,6 @@
 /**
  * Type definitions for linx.js
+ * Updated: Added showFirstLast option for ButtonPaginationOptions
  */
 
 import { 
@@ -44,6 +45,7 @@ export interface ButtonPaginationOptions<T = any> extends BasePaginationOptions<
   last?: ButtonConfig;
   buttonStyle?: ButtonStyle;
   showPageCounter?: boolean;
+  showFirstLast?: boolean; // New option to enable first/last buttons
 }
 
 // Select menu-specific options

@@ -1,5 +1,6 @@
 /**
  * Validation utilities for linx.js
+ * Fixed: Added support for Discord custom emojis
  */
 
 import { EmbedBuilder, ButtonStyle } from 'discord.js';
@@ -97,21 +98,37 @@ export class ValidationUtils {
     }
   }
 
-  // Validates emoji format
+  // Validates emoji format (Unicode emojis only)
   static validateEmoji(emoji: string): void {
     if (typeof emoji !== 'string') {
       throw ErrorHandler.validation('emoji', emoji, 'string');
     }
 
-    if (!VALIDATION.EMOJI_PATTERN.test(emoji)) {
-      throw ErrorHandler.validation('emoji', emoji, 'valid Discord emoji format');
+    if (!VALIDATION.EMOJI_PATTERN.test(emoji) && !VALIDATION.DISCORD_EMOJI_PATTERN.test(emoji)) {
+      throw ErrorHandler.validation('emoji', emoji, 'valid Discord emoji format (Unicode or custom <:name:id>)');
     }
   }
 
-  // Checks if a string is an emoji (for button config parsing)
+  // Checks if a string is a Unicode emoji (more lenient approach)
   static isEmoji(str: string): boolean {
+    if (typeof str !== 'string' || str.length === 0) return false;
+    
+    // Very lenient approach - check common emoji ranges and specific characters
+    // This covers most emoji including arrows, symbols, and emojis with variation selectors
+    return /[\u{1F000}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F100}-\u{1F1FF}]|[\u{2190}-\u{21FF}]|[\u{25A0}-\u{25FF}]|[\u{2B00}-\u{2BFF}]|[\u{23E9}-\u{23EF}]|[\u{23F0}-\u{23F3}]|[\u{23F8}-\u{23FA}]|[\u{FE0F}]/u.test(str) || 
+           // Also accept common arrow and navigation emojis specifically
+           ['⬅️', '➡️', '⏪', '⏩', '◀️', '▶️', '⬅', '➡', '⏪', '⏩', '◀', '▶'].includes(str);
+  }
+
+  // Checks if a string is a custom Discord emoji
+  static isCustomEmoji(str: string): boolean {
     if (typeof str !== 'string') return false;
-    return VALIDATION.EMOJI_PATTERN.test(str);
+    return VALIDATION.DISCORD_EMOJI_PATTERN.test(str);
+  }
+
+  // Checks if a string is any valid emoji (Unicode or custom)
+  static isAnyEmoji(str: string): boolean {
+    return this.isEmoji(str) || this.isCustomEmoji(str);
   }
 
   // Validates button configuration
@@ -122,7 +139,7 @@ export class ValidationUtils {
         throw ErrorHandler.validation(configName, config, 'non-empty string');
       }
       
-      if (!this.isEmoji(config)) {
+      if (!this.isAnyEmoji(config)) {
         // Validate as label if it's not an emoji
         this.validateButtonLabel(config);
       }
@@ -139,12 +156,14 @@ export class ValidationUtils {
         
         if (index === 0) {
           // First element - validate as label or emoji
-          if (!this.isEmoji(item)) {
+          if (!this.isAnyEmoji(item)) {
             this.validateButtonLabel(item);
           }
         } else if (index === 1) {
-          // Second element should be emoji
-          this.validateEmoji(item);
+          // Second element should be emoji (Unicode or custom)
+          if (!this.isAnyEmoji(item)) {
+            throw ErrorHandler.validation(`${configName}[${index}]`, item, 'valid emoji (Unicode or Discord custom)');
+          }
         }
       });
     } else {
@@ -311,6 +330,14 @@ export class ValidationUtils {
       if (!Number.isInteger(options.startPage) || options.startPage < 0) {
         throw ErrorHandler.validation('startPage', options.startPage, 'non-negative integer');
       }
+    }
+
+    if (options.showPageCounter !== undefined && typeof options.showPageCounter !== 'boolean') {
+      throw ErrorHandler.validation('showPageCounter', options.showPageCounter, 'boolean');
+    }
+
+    if (options.showFirstLast !== undefined && typeof options.showFirstLast !== 'boolean') {
+      throw ErrorHandler.validation('showFirstLast', options.showFirstLast, 'boolean');
     }
   }
 

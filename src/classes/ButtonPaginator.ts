@@ -1,5 +1,6 @@
 /**
  * Button-based paginator implementation with new cleaner API
+ * Fixed: Custom emoji support and first/last button implementation
  */
 
 import { 
@@ -46,72 +47,137 @@ export class ButtonPaginator<T = any> extends BasePaginator<T> {
       first: options.first ?? DEFAULT_BUTTONS.FIRST_LABEL,
       last: options.last ?? DEFAULT_BUTTONS.LAST_LABEL,
       buttonStyle: options.buttonStyle ?? config.defaults.buttonStyle,
-      showPageCounter: options.showPageCounter ?? config.defaults.showPageCounter
+      showPageCounter: options.showPageCounter ?? config.defaults.showPageCounter,
+      showFirstLast: options.showFirstLast ?? true
     };
   }
 
-  /**
-   * Parses button configuration into label and emoji
-   */
-  private parseButtonConfig(config: ButtonConfig, defaultLabel: string, defaultEmoji: string): ParsedButtonConfig {
+  private parseButtonConfig(
+    config: ButtonConfig, 
+    defaultLabel: string, 
+    defaultEmoji: string,
+    buttonType?: string
+  ): ParsedButtonConfig {
+    const isLeftButton = buttonType === 'first' || buttonType === 'previous';
+    
     if (typeof config === 'string') {
-      // Single string - could be label or emoji
-      if (ValidationUtils.isEmoji(config)) {
-        return { label: defaultLabel, emoji: config };
+      // Single string - could be label or emoji (including custom Discord emojis)
+      if (ValidationUtils.isEmoji(config) || ValidationUtils.isCustomEmoji(config)) {
+        // Just emoji provided, use default label with proper positioning
+        if (isLeftButton) {
+          return { label: `${config} ${defaultLabel}`, emoji: '' };
+        } else {
+          return { label: `${defaultLabel} ${config}`, emoji: '' };
+        }
       } else {
-        return { label: config, emoji: defaultEmoji };
+        if (isLeftButton) {
+          return { label: `${defaultEmoji} ${config}`, emoji: '' };
+        } else {
+          return { label: `${config} ${defaultEmoji}`, emoji: '' };
+        }
       }
     } else if (Array.isArray(config)) {
       if (config.length === 1) {
-        // Single element array
         const value = config[0];
-        if (ValidationUtils.isEmoji(value)) {
-          return { label: defaultLabel, emoji: value };
+        if (ValidationUtils.isEmoji(value) || ValidationUtils.isCustomEmoji(value)) {
+          if (isLeftButton) {
+            return { label: `${value} ${defaultLabel}`, emoji: '' };
+          } else {
+            return { label: `${defaultLabel} ${value}`, emoji: '' };
+          }
         } else {
-          return { label: value, emoji: defaultEmoji };
+          if (isLeftButton) {
+            return { label: `${defaultEmoji} ${value}`, emoji: '' };
+          } else {
+            return { label: `${value} ${defaultEmoji}`, emoji: '' };
+          }
         }
       } else if (config.length === 2) {
-        // Two element array [label, emoji]
-        return { label: config[0], emoji: config[1] };
+        const [label, emoji] = config;
+        if (isLeftButton) {
+          return { label: `${emoji} ${label}`, emoji: '' };
+        } else {
+          return { label: `${label} ${emoji}`, emoji: '' };
+        }
       }
     }
     
-    // Fallback to defaults
-    return { label: defaultLabel, emoji: defaultEmoji };
+    // Fallback to defaults with proper positioning
+    if (isLeftButton) {
+      return { label: `${defaultEmoji} ${defaultLabel}`, emoji: '' };
+    } else {
+      return { label: `${defaultLabel} ${defaultEmoji}`, emoji: '' };
+    }
   }
 
   protected buildComponents(): ActionRowBuilder<ButtonBuilder>[] {
-    const row = new ActionRowBuilder<ButtonBuilder>();
+    const buttons: ButtonBuilder[] = [];
 
-    // Parse button configurations
+    const firstConfig = this.parseButtonConfig(
+      this.buttonOptions.first, 
+      DEFAULT_BUTTONS.FIRST_LABEL, 
+      DEFAULT_BUTTONS.FIRST_EMOJI,
+      'first'
+    );
+
     const previousConfig = this.parseButtonConfig(
       this.buttonOptions.previous, 
       DEFAULT_BUTTONS.PREVIOUS_LABEL, 
-      DEFAULT_BUTTONS.PREVIOUS_EMOJI
+      DEFAULT_BUTTONS.PREVIOUS_EMOJI,
+      'previous'
     );
 
     const nextConfig = this.parseButtonConfig(
       this.buttonOptions.next, 
       DEFAULT_BUTTONS.NEXT_LABEL, 
-      DEFAULT_BUTTONS.NEXT_EMOJI
+      DEFAULT_BUTTONS.NEXT_EMOJI,
+      'next'
     );
+
+    const lastConfig = this.parseButtonConfig(
+      this.buttonOptions.last, 
+      DEFAULT_BUTTONS.LAST_LABEL, 
+      DEFAULT_BUTTONS.LAST_EMOJI,
+      'last'
+    );
+
+    if (this.buttonOptions.showFirstLast && this.state.totalPages > 2) {
+      const firstButton = new ButtonBuilder()
+        .setCustomId(CUSTOM_IDS.BUTTON_FIRST)
+        .setStyle(this.buttonOptions.buttonStyle)
+        .setLabel(firstConfig.label)
+        .setDisabled(!this.hasPreviousPage());
+
+      if (firstConfig.emoji && !firstConfig.label.includes(firstConfig.emoji)) {
+        firstButton.setEmoji(firstConfig.emoji);
+      }
+
+      buttons.push(firstButton);
+    }
 
     // Previous button
     const previousButton = new ButtonBuilder()
       .setCustomId(CUSTOM_IDS.BUTTON_PREVIOUS)
       .setStyle(this.buttonOptions.buttonStyle)
       .setLabel(previousConfig.label)
-      .setEmoji(previousConfig.emoji)
       .setDisabled(!this.hasPreviousPage());
 
+    // Only set emoji separately if we have one and no label was combined
+    if (previousConfig.emoji && !previousConfig.label.includes(previousConfig.emoji)) {
+      previousButton.setEmoji(previousConfig.emoji);
+    }
+
+    buttons.push(previousButton);
+
     // Page counter button (if enabled)
-    let pageCounterButton: ButtonBuilder | null = null;
     if (this.buttonOptions.showPageCounter) {
-      pageCounterButton = new ButtonBuilder()
+      const pageCounterButton = new ButtonBuilder()
         .setCustomId(`linx_counter_${Date.now()}`)
         .setLabel(`${this.state.currentPage + 1} / ${this.state.totalPages}`)
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(true);
+
+      buttons.push(pageCounterButton);
     }
 
     // Next button
@@ -119,15 +185,34 @@ export class ButtonPaginator<T = any> extends BasePaginator<T> {
       .setCustomId(CUSTOM_IDS.BUTTON_NEXT)
       .setStyle(this.buttonOptions.buttonStyle)
       .setLabel(nextConfig.label)
-      .setEmoji(nextConfig.emoji)
       .setDisabled(!this.hasNextPage());
 
-    // Add buttons to row
-    if (pageCounterButton) {
-      row.addComponents(previousButton, pageCounterButton, nextButton);
-    } else {
-      row.addComponents(previousButton, nextButton);
+    // Only set emoji separately if we have one and no label was combined
+    if (nextConfig.emoji && !nextConfig.label.includes(nextConfig.emoji)) {
+      nextButton.setEmoji(nextConfig.emoji);
     }
+
+    buttons.push(nextButton);
+
+    // Last button (only show if enabled and there are multiple pages)
+    if (this.buttonOptions.showFirstLast && this.state.totalPages > 2) {
+      const lastButton = new ButtonBuilder()
+        .setCustomId(CUSTOM_IDS.BUTTON_LAST)
+        .setStyle(this.buttonOptions.buttonStyle)
+        .setLabel(lastConfig.label)
+        .setDisabled(!this.hasNextPage());
+
+      // Only set emoji separately if we have one and no label was combined
+      if (lastConfig.emoji && !lastConfig.label.includes(lastConfig.emoji)) {
+        lastButton.setEmoji(lastConfig.emoji);
+      }
+
+      buttons.push(lastButton);
+    }
+
+    // Create action row with all buttons
+    const row = new ActionRowBuilder<ButtonBuilder>();
+    row.addComponents(...buttons);
 
     return [row];
   }
@@ -147,6 +232,12 @@ export class ButtonPaginator<T = any> extends BasePaginator<T> {
 
     try {
       switch (componentInteraction.customId) {
+        case CUSTOM_IDS.BUTTON_FIRST:
+          if (this.hasPreviousPage()) {
+            await this.firstPage();
+          }
+          break;
+
         case CUSTOM_IDS.BUTTON_PREVIOUS:
           if (this.hasPreviousPage()) {
             await this.previousPage();
@@ -156,12 +247,6 @@ export class ButtonPaginator<T = any> extends BasePaginator<T> {
         case CUSTOM_IDS.BUTTON_NEXT:
           if (this.hasNextPage()) {
             await this.nextPage();
-          }
-          break;
-
-        case CUSTOM_IDS.BUTTON_FIRST:
-          if (this.hasPreviousPage()) {
-            await this.firstPage();
           }
           break;
 
@@ -213,6 +298,9 @@ export class ButtonPaginator<T = any> extends BasePaginator<T> {
     }
     if (newOptions.showPageCounter !== undefined) {
       this.buttonOptions.showPageCounter = newOptions.showPageCounter;
+    }
+    if (newOptions.showFirstLast !== undefined) {
+      this.buttonOptions.showFirstLast = newOptions.showFirstLast;
     }
 
     // Update the message with new components
