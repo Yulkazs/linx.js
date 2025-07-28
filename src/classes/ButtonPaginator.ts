@@ -30,13 +30,10 @@ export class ButtonPaginator<T = any> extends BasePaginator<T> {
     options: ButtonPaginationOptions<T> = {}
   ) {
     super(interaction, data, options);
-
-    // Validate button-specific options
     ValidationUtils.validateButtonOptions(options);
 
     const config = getLinxConfig();
 
-    // Merge button-specific options with defaults
     this.buttonOptions = {
       ...this.options,
       previousLabel: options.previousLabel ?? DEFAULT_BUTTONS.PREVIOUS_LABEL,
@@ -52,38 +49,38 @@ export class ButtonPaginator<T = any> extends BasePaginator<T> {
   protected buildComponents(): ActionRowBuilder<ButtonBuilder>[] {
     const row = new ActionRowBuilder<ButtonBuilder>();
 
-    // Previous button - Build it step by step
+    // Previous button
     const previousButton = new ButtonBuilder()
       .setCustomId(CUSTOM_IDS.BUTTON_PREVIOUS)
       .setStyle(this.buttonOptions.buttonStyle)
       .setDisabled(this.buttonOptions.disableButtonsAtEdges && !this.hasPreviousPage());
 
-    // Add label or emoji (ensure at least one exists)
     if (this.buttonOptions.previousLabel) {
       previousButton.setLabel(this.buttonOptions.previousLabel);
     }
+
     if (this.buttonOptions.previousEmoji) {
       previousButton.setEmoji(this.buttonOptions.previousEmoji);
     }
-    // Fallback if neither label nor emoji is set
+
     if (!this.buttonOptions.previousLabel && !this.buttonOptions.previousEmoji) {
       previousButton.setLabel('Previous');
     }
 
-    // Next button - Build it step by step
+    // Next button
     const nextButton = new ButtonBuilder()
       .setCustomId(CUSTOM_IDS.BUTTON_NEXT)
       .setStyle(this.buttonOptions.buttonStyle)
       .setDisabled(this.buttonOptions.disableButtonsAtEdges && !this.hasNextPage());
 
-    // Add label or emoji (ensure at least one exists)
     if (this.buttonOptions.nextLabel) {
       nextButton.setLabel(this.buttonOptions.nextLabel);
     }
+
     if (this.buttonOptions.nextEmoji) {
       nextButton.setEmoji(this.buttonOptions.nextEmoji);
     }
-    // Fallback if neither label nor emoji is set
+
     if (!this.buttonOptions.nextLabel && !this.buttonOptions.nextEmoji) {
       nextButton.setLabel('Next');
     }
@@ -91,7 +88,7 @@ export class ButtonPaginator<T = any> extends BasePaginator<T> {
     // Add page counter button if enabled
     if (this.buttonOptions.showPageCounter) {
       const pageCounterButton = new ButtonBuilder()
-        .setCustomId(`linx_counter_${Date.now()}`) // Unique ID to avoid conflicts
+        .setCustomId(`linx_counter_${Date.now()}`)
         .setLabel(`${this.state.currentPage + 1} / ${this.state.totalPages}`)
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(true);
@@ -100,7 +97,6 @@ export class ButtonPaginator<T = any> extends BasePaginator<T> {
     } else {
       row.addComponents(previousButton, nextButton);
     }
-
     return [row];
   }
 

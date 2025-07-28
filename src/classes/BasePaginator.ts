@@ -51,7 +51,7 @@ export abstract class BasePaginator<T = any> extends EventEmitter {
       ephemeral: options.ephemeral ?? config.defaults.ephemeral,
       timeout: options.timeout ?? config.defaults.timeout,
       startPage: options.startPage ?? DEFAULT_PAGINATION.START_PAGE,
-      deleteOnTimeout: options.deleteOnTimeout ?? DEFAULT_PAGINATION.DELETE_ON_TIMEOUT,
+      deleteOnTimeout: options.deleteOnTimeout ?? config.defaults.deleteOnTimeout,
       timeoutMessage: options.timeoutMessage ?? config.messages.timeout,
       pageRenderer: options.pageRenderer ?? this.defaultPageRenderer.bind(this)
     };

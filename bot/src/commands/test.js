@@ -20,13 +20,14 @@ module.exports = {
             // Create a simple ButtonPaginator
             const paginator = new ButtonPaginator(interaction, testData, {
                 ephemeral: false,
-                showPageCounter: false,
+                timeout: 60000,
+                showPageCounter: true,
                 previousEmoji: '<:linx_prev:1398768319279927457>',
                 nextEmoji: '<:linx_next:1398768007861370911>',
                 firstEmoji: '<:linx_first:1398768007861370911>',
                 lastEmoji: '<:linx_last:1398768007861370911>',
-                disableOnTimeout: true, // Disable buttons after timeout
-                customId: 'test_paginator', // Custom ID for the paginator
+                disableOnTimeout: true,
+                customId: 'test_paginator',
             });
             
             // Start the paginator
