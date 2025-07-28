@@ -11,7 +11,9 @@ import {
   ButtonPaginationOptions,
   SelectMenuPaginationOptions,
   HybridPaginationOptions,
-  LinxInteraction 
+  LinxInteraction,
+  ButtonConfig,
+  AfterTimeoutBehavior
 } from '../types';
 
 export class ValidationUtils {
@@ -60,6 +62,14 @@ export class ValidationUtils {
     }
   }
 
+  // Validates afterTimeout behavior
+  static validateAfterTimeoutBehavior(behavior: AfterTimeoutBehavior): void {
+    const validBehaviors: AfterTimeoutBehavior[] = ['delete', 'disable'];
+    if (!validBehaviors.includes(behavior)) {
+      throw ErrorHandler.validation('afterTimeout', behavior, `one of: ${validBehaviors.join(', ')}`);
+    }
+  }
+
   // Validates button style
   static validateButtonStyle(style: ButtonStyle): void {
     const validStyles = Object.values(ButtonStyle).filter(val => typeof val === 'number');
@@ -95,6 +105,50 @@ export class ValidationUtils {
 
     if (!VALIDATION.EMOJI_PATTERN.test(emoji)) {
       throw ErrorHandler.validation('emoji', emoji, 'valid Discord emoji format');
+    }
+  }
+
+  // Checks if a string is an emoji (for button config parsing)
+  static isEmoji(str: string): boolean {
+    if (typeof str !== 'string') return false;
+    return VALIDATION.EMOJI_PATTERN.test(str);
+  }
+
+  // Validates button configuration
+  static validateButtonConfig(config: ButtonConfig, configName: string): void {
+    if (typeof config === 'string') {
+      // Single string - validate as either label or emoji
+      if (config.length === 0) {
+        throw ErrorHandler.validation(configName, config, 'non-empty string');
+      }
+      
+      if (!this.isEmoji(config)) {
+        // Validate as label if it's not an emoji
+        this.validateButtonLabel(config);
+      }
+    } else if (Array.isArray(config)) {
+      if (config.length < 1 || config.length > 2) {
+        throw ErrorHandler.validation(configName, config, 'array with 1 or 2 elements');
+      }
+      
+      // Validate each element
+      config.forEach((item, index) => {
+        if (typeof item !== 'string' || item.length === 0) {
+          throw ErrorHandler.validation(`${configName}[${index}]`, item, 'non-empty string');
+        }
+        
+        if (index === 0) {
+          // First element - validate as label or emoji
+          if (!this.isEmoji(item)) {
+            this.validateButtonLabel(item);
+          }
+        } else if (index === 1) {
+          // Second element should be emoji
+          this.validateEmoji(item);
+        }
+      });
+    } else {
+      throw ErrorHandler.validation(configName, config, 'string or array');
     }
   }
 
@@ -223,30 +277,34 @@ export class ValidationUtils {
     }
   }
 
-  // Validates interaction response
+  // Validates button options with new API
   static validateButtonOptions<T>(options: ButtonPaginationOptions<T>): void {
     if (options.timeout !== undefined) {
       this.validateTimeout(options.timeout);
+    }
+
+    if (options.afterTimeout !== undefined) {
+      this.validateAfterTimeoutBehavior(options.afterTimeout);
     }
 
     if (options.buttonStyle !== undefined) {
       this.validateButtonStyle(options.buttonStyle);
     }
 
-    if (options.previousLabel !== undefined) {
-      this.validateButtonLabel(options.previousLabel);
+    if (options.previous !== undefined) {
+      this.validateButtonConfig(options.previous, 'previous');
     }
 
-    if (options.nextLabel !== undefined) {
-      this.validateButtonLabel(options.nextLabel);
+    if (options.next !== undefined) {
+      this.validateButtonConfig(options.next, 'next');
     }
 
-    if (options.previousEmoji !== undefined) {
-      this.validateEmoji(options.previousEmoji);
+    if (options.first !== undefined) {
+      this.validateButtonConfig(options.first, 'first');
     }
 
-    if (options.nextEmoji !== undefined) {
-      this.validateEmoji(options.nextEmoji);
+    if (options.last !== undefined) {
+      this.validateButtonConfig(options.last, 'last');
     }
 
     if (options.startPage !== undefined) {
@@ -260,6 +318,10 @@ export class ValidationUtils {
   static validateSelectMenuOptions<T>(options: SelectMenuPaginationOptions<T>): void {
     if (options.timeout !== undefined) {
       this.validateTimeout(options.timeout);
+    }
+
+    if (options.afterTimeout !== undefined) {
+      this.validateAfterTimeoutBehavior(options.afterTimeout);
     }
 
     if (options.placeholder !== undefined) {
@@ -299,6 +361,10 @@ export class ValidationUtils {
   static validateHybridOptions<T>(options: HybridPaginationOptions<T>): void {
     if (options.timeout !== undefined) {
       this.validateTimeout(options.timeout);
+    }
+
+    if (options.afterTimeout !== undefined) {
+      this.validateAfterTimeoutBehavior(options.afterTimeout);
     }
 
     if (options.layout !== undefined) {

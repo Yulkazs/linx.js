@@ -20,25 +20,29 @@ export type PaginationData<T = any> = T[];
 // Function to render each page - returns embed or string
 export type PageRenderer<T> = (item: T, index: number, array: T[]) => EmbedBuilder | string;
 
+// Button configuration - can be just label, just emoji, or both
+export type ButtonConfig = string | [string] | [string, string];
+
+// After timeout behavior
+export type AfterTimeoutBehavior = 'delete' | 'disable';
+
 // Base pagination options (shared by all paginators)
 export interface BasePaginationOptions<T = any> {
   ephemeral?: boolean;
   timeout?: number;
   pageRenderer?: PageRenderer<T>;
-
   startPage?: number;
-  deleteOnTimeout?: boolean;
   timeoutMessage?: string;
+  afterTimeout?: AfterTimeoutBehavior;
 }
 
-// Button-specific options
+// Button-specific options with new cleaner API
 export interface ButtonPaginationOptions<T = any> extends BasePaginationOptions<T> {
-  previousLabel?: string;
-  nextLabel?: string;
-  previousEmoji?: string;
-  nextEmoji?: string;
+  previous?: ButtonConfig;
+  next?: ButtonConfig;
+  first?: ButtonConfig;
+  last?: ButtonConfig;
   buttonStyle?: ButtonStyle;
-  disableButtonsAtEdges?: boolean;
   showPageCounter?: boolean;
 }
 

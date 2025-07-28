@@ -18,11 +18,10 @@ export interface LinxConfig {
         timeout: number;
         ephemeral: boolean;
         buttonStyle: ButtonStyle;
-        deleteOnTimeout: boolean;
         showPageCounter: boolean;
-        disableButtonsAtEdges: boolean;
         maxOptionsPerMenu: number;
         startPage: number;
+        afterTimeout: 'delete' | 'disable';
     };
     messages: {
         timeout: string;
@@ -47,11 +46,10 @@ const defaultConfig: LinxConfig = {
         timeout: 300000, // 5 minutes
         ephemeral: false,
         buttonStyle: ButtonStyle.Primary,
-        deleteOnTimeout: false,
         showPageCounter: true,
-        disableButtonsAtEdges: true,
         maxOptionsPerMenu: 25,
         startPage: 0,
+        afterTimeout: 'disable',
     },
     messages: {
         timeout: 'This pagination has timed out.',
@@ -124,6 +122,14 @@ export function setButtonStyle(style: ButtonStyle): void {
     currentConfig.defaults.buttonStyle = style;
 }
 
+// Convenience function to set after timeout behavior
+export function setAfterTimeout(behavior: 'delete' | 'disable'): void {
+    if (behavior !== 'delete' && behavior !== 'disable') {
+        throw ErrorHandler.validation('afterTimeout', behavior, '"delete" or "disable"');
+    }
+    currentConfig.defaults.afterTimeout = behavior;
+}
+
 //Get a specific config value with type safety
 export function getConfigValue<K extends keyof LinxConfig>(
     section: K
@@ -168,16 +174,14 @@ function validateDefaults(defaults: Partial<LinxConfig['defaults']>): void {
         throw ErrorHandler.validation('defaults.ephemeral', defaults.ephemeral, 'boolean');
     }
     
-    if (defaults.deleteOnTimeout !== undefined && typeof defaults.deleteOnTimeout !== 'boolean') {
-        throw ErrorHandler.validation('defaults.deleteOnTimeout', defaults.deleteOnTimeout, 'boolean');
-    }
-    
     if (defaults.showPageCounter !== undefined && typeof defaults.showPageCounter !== 'boolean') {
         throw ErrorHandler.validation('defaults.showPageCounter', defaults.showPageCounter, 'boolean');
     }
     
-    if (defaults.disableButtonsAtEdges !== undefined && typeof defaults.disableButtonsAtEdges !== 'boolean') {
-        throw ErrorHandler.validation('defaults.disableButtonsAtEdges', defaults.disableButtonsAtEdges, 'boolean');
+    if (defaults.afterTimeout !== undefined) {
+        if (defaults.afterTimeout !== 'delete' && defaults.afterTimeout !== 'disable') {
+            throw ErrorHandler.validation('defaults.afterTimeout', defaults.afterTimeout, '"delete" or "disable"');
+        }
     }
     
     if (defaults.maxOptionsPerMenu !== undefined) {

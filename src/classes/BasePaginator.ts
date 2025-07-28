@@ -51,7 +51,7 @@ export abstract class BasePaginator<T = any> extends EventEmitter {
       ephemeral: options.ephemeral ?? config.defaults.ephemeral,
       timeout: options.timeout ?? config.defaults.timeout,
       startPage: options.startPage ?? DEFAULT_PAGINATION.START_PAGE,
-      deleteOnTimeout: options.deleteOnTimeout ?? config.defaults.deleteOnTimeout,
+      afterTimeout: options.afterTimeout ?? config.defaults.afterTimeout,
       timeoutMessage: options.timeoutMessage ?? config.messages.timeout,
       pageRenderer: options.pageRenderer ?? this.defaultPageRenderer.bind(this)
     };
@@ -63,6 +63,10 @@ export abstract class BasePaginator<T = any> extends EventEmitter {
 
     if (this.options.pageRenderer) {
       ValidationUtils.validatePageRenderer(this.options.pageRenderer);
+    }
+
+    if (this.options.afterTimeout) {
+      ValidationUtils.validateAfterTimeoutBehavior(this.options.afterTimeout);
     }
 
     // Initialize state
@@ -229,7 +233,7 @@ export abstract class BasePaginator<T = any> extends EventEmitter {
     try {
       this.emit('timeout', this.state.currentPage, this.state.data[this.state.currentPage]);
 
-      if (this.options.deleteOnTimeout && this.state.message) {
+      if (this.options.afterTimeout === 'delete' && this.state.message) {
         await this.state.message.delete().catch(() => {});
       } else if (this.state.message) {
         // Disable all components
