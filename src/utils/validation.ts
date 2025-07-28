@@ -113,8 +113,7 @@ export class ValidationUtils {
   static isEmoji(str: string): boolean {
     if (typeof str !== 'string' || str.length === 0) return false;
     
-    // Very lenient approach - check common emoji ranges and specific characters
-    // This covers most emoji including arrows, symbols, and emojis with variation selectors
+    // Check common emoji ranges and specific characters
     return /[\u{1F000}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F100}-\u{1F1FF}]|[\u{2190}-\u{21FF}]|[\u{25A0}-\u{25FF}]|[\u{2B00}-\u{2BFF}]|[\u{23E9}-\u{23EF}]|[\u{23F0}-\u{23F3}]|[\u{23F8}-\u{23FA}]|[\u{FE0F}]/u.test(str) || 
            // Also accept common arrow and navigation emojis specifically
            ['⬅️', '➡️', '⏪', '⏩', '◀️', '▶️', '⬅', '➡', '⏪', '⏩', '◀', '▶'].includes(str);
@@ -134,7 +133,7 @@ export class ValidationUtils {
   // Validates button configuration
   static validateButtonConfig(config: ButtonConfig, configName: string): void {
     if (typeof config === 'string') {
-      // Single string - validate as either label or emoji
+      // Single string
       if (config.length === 0) {
         throw ErrorHandler.validation(configName, config, 'non-empty string');
       }
@@ -155,12 +154,12 @@ export class ValidationUtils {
         }
         
         if (index === 0) {
-          // First element - validate as label or emoji
+          // Validate as label or emoji
           if (!this.isAnyEmoji(item)) {
             this.validateButtonLabel(item);
           }
         } else if (index === 1) {
-          // Second element should be emoji (Unicode or custom)
+          // Second element should be emoji
           if (!this.isAnyEmoji(item)) {
             throw ErrorHandler.validation(`${configName}[${index}]`, item, 'valid emoji (Unicode or Discord custom)');
           }
@@ -296,7 +295,7 @@ export class ValidationUtils {
     }
   }
 
-  // Validates button options with new API
+  // Validates button options
   static validateButtonOptions<T>(options: ButtonPaginationOptions<T>): void {
     if (options.timeout !== undefined) {
       this.validateTimeout(options.timeout);

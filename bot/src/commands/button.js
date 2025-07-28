@@ -3,7 +3,7 @@ const { ButtonPaginator } = require('../../../dist/index.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('test')
+        .setName('button')
         .setDescription('Quick test of ButtonPaginator with simple data'),
     
     async execute(interaction) {

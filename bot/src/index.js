@@ -17,8 +17,8 @@ client.commands = new Collection();
 const pingCommand = require('./commands/ping');
 client.commands.set(pingCommand.data.name, pingCommand);
 
-const testCommand = require('./commands/test');
-client.commands.set(testCommand.data.name, testCommand);
+const buttonCommand = require('./commands/button');
+client.commands.set(buttonCommand.data.name, buttonCommand);
 
 // Import events
 const readyEvent = require('./events/ready');
