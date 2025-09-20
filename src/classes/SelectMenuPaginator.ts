@@ -1,6 +1,6 @@
 /**
  * Select menu-based paginator implementation
- * Allows users to navigate through pages using a dropdown select menu
+ * Fixed: Proper handling of three labeling options with validation
  */
 
 import { 
@@ -30,9 +30,47 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
     options: SelectMenuPaginationOptions<T> = {}
   ) {
     super(interaction, data, options);
+    
+    // Validate select menu options first
     ValidationUtils.validateSelectMenuOptions(options);
 
     const config = getLinxConfig();
+
+    // Determine which labeling system to use (priority: custom-labels > custom-numbers > page-numbers)
+    let finalLabelStyle: 'page-numbers' | 'custom-numbers' | 'custom-labels' = 'page-numbers';
+    let finalCustomPrefix = '';
+    let finalCustomSuffix = '';
+    let finalOptionLabelRenderer: ((item: T, index: number) => string) | undefined;
+    let finalOptionDescriptionRenderer: ((item: T, index: number) => string) | undefined;
+
+    // Validate the labeling options and determine which one to use
+    const hasCustomLabels = options.optionLabelRenderer !== undefined;
+    const hasCustomNumbers = options.labelStyle === 'custom-numbers' || options.customPrefix !== undefined;
+    const hasPageNumbers = options.labelStyle === 'page-numbers' || (!hasCustomLabels && !hasCustomNumbers);
+
+    // Check for conflicting options and warn
+    const activeOptions = [hasCustomLabels, hasCustomNumbers, hasPageNumbers].filter(Boolean).length;
+    if (activeOptions > 1) {
+      console.warn('[LinxJS] Multiple labeling options detected. Using priority: custom-labels > custom-numbers > page-numbers');
+    }
+
+    // Set the final labeling system based on priority
+    if (hasCustomLabels) {
+      finalLabelStyle = 'custom-labels';
+      finalOptionLabelRenderer = options.optionLabelRenderer;
+      finalOptionDescriptionRenderer = options.optionDescriptionRenderer;
+    } else if (hasCustomNumbers) {
+      finalLabelStyle = 'custom-numbers';
+      finalCustomPrefix = options.customPrefix || 'Section';
+      finalCustomSuffix = options.customSuffix || '';
+      
+      // Validate prefix if using custom numbers
+      if (finalCustomPrefix.trim().length === 0) {
+        throw ErrorHandler.validation('customPrefix', finalCustomPrefix, 'non-empty string when using custom-numbers');
+      }
+    } else {
+      finalLabelStyle = 'page-numbers';
+    }
 
     this.selectMenuOptions = {
       // Base options from parent
@@ -48,31 +86,32 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
       customId: options.customId ?? `${DEFAULT_SELECT_MENU.CUSTOM_ID_PREFIX}_${Date.now()}`,
       minValues: options.minValues ?? DEFAULT_SELECT_MENU.MIN_VALUES,
       maxValues: options.maxValues ?? DEFAULT_SELECT_MENU.MAX_VALUES,
-      optionLabelRenderer: options.optionLabelRenderer ?? this.getDefaultOptionLabelRenderer(options),
-      optionDescriptionRenderer: options.optionDescriptionRenderer ?? this.getDefaultOptionDescriptionRenderer(options),
       maxOptionsPerMenu: options.maxOptionsPerMenu ?? config.defaults.maxOptionsPerMenu,
       
-      // Convenience options (new intuitive system)
-      labelStyle: options.labelStyle ?? 'page-numbers',
-      customPrefix: options.customPrefix ?? '',
-      customSuffix: options.customSuffix ?? '',
+      // Final determined labeling system
+      labelStyle: finalLabelStyle,
+      customPrefix: finalCustomPrefix,
+      customSuffix: finalCustomSuffix,
       autoDescriptions: options.autoDescriptions ?? true,
-      descriptionMaxLength: options.descriptionMaxLength ?? 50
+      descriptionMaxLength: options.descriptionMaxLength ?? 50,
+      
+      // Set the appropriate renderers based on the determined system
+      optionLabelRenderer: finalOptionLabelRenderer || this.getDefaultOptionLabelRenderer(finalLabelStyle, finalCustomPrefix, finalCustomSuffix),
+      optionDescriptionRenderer: finalOptionDescriptionRenderer || this.getDefaultOptionDescriptionRenderer(options.autoDescriptions ?? true, options.descriptionMaxLength ?? 50)
     };
 
     // Validate that we don't exceed Discord's limits
     if (this.state.totalPages > this.selectMenuOptions.maxOptionsPerMenu) {
-      // For now, we'll limit to the max options per menu
-      // In a more advanced implementation, you could create multiple select menus
       console.warn(`Total pages (${this.state.totalPages}) exceeds maxOptionsPerMenu (${this.selectMenuOptions.maxOptionsPerMenu}). Only first ${this.selectMenuOptions.maxOptionsPerMenu} pages will be accessible.`);
     }
   }
 
-  // Gets the appropriate default label renderer based on options
-  private getDefaultOptionLabelRenderer(options: SelectMenuPaginationOptions<T>): (item: T, index: number) => string {
-    // If user specified a label style, use it
-    const labelStyle = options.labelStyle ?? 'page-numbers';
-    
+  // Gets the appropriate default label renderer based on determined labeling system
+  private getDefaultOptionLabelRenderer(
+    labelStyle: 'page-numbers' | 'custom-numbers' | 'custom-labels',
+    customPrefix: string,
+    customSuffix: string
+  ): (item: T, index: number) => string {
     return (item: T, index: number) => {
       const pageNumber = index + 1; // Always start from 1 for user-facing numbers
       
@@ -81,12 +120,11 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
           return `Page ${pageNumber}`;
           
         case 'custom-numbers':
-          const prefix = options.customPrefix || 'Item';
-          const suffix = options.customSuffix ? ` ${options.customSuffix}` : '';
-          return `${prefix} ${pageNumber}${suffix}`;
+          const suffix = customSuffix ? ` ${customSuffix}` : '';
+          return `${customPrefix} ${pageNumber}${suffix}`;
           
         case 'custom-labels':
-          // Fall back to original default if no custom renderer provided
+          // This should never be reached since custom-labels uses the provided renderer
           return `Page ${pageNumber}`;
           
         default:
@@ -95,15 +133,15 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
     };
   }
 
-  // Gets the appropriate default description renderer based on options
-  private getDefaultOptionDescriptionRenderer(options: SelectMenuPaginationOptions<T>): (item: T, index: number) => string {
+  // Gets the appropriate default description renderer
+  private getDefaultOptionDescriptionRenderer(
+    autoDescriptions: boolean, 
+    maxLength: number
+  ): (item: T, index: number) => string {
     // If auto descriptions are disabled, return empty string
-    if (options.autoDescriptions === false) {
+    if (!autoDescriptions) {
       return (item: T, index: number) => '';
     }
-    
-    // If user specified custom description length
-    const maxLength = options.descriptionMaxLength ?? 50;
     
     return (item: T, index: number) => {
       if (typeof item === 'string') {
@@ -128,32 +166,6 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
       const stringItem = String(item);
       return stringItem.length > maxLength ? `${stringItem.substring(0, maxLength - 3)}...` : stringItem;
     };
-  }
-
-  // Default option label renderer - shows page number
-  private defaultOptionLabelRenderer(item: T, index: number): string {
-    return `Page ${index + 1}`;
-  }
-
-  // Default option description renderer - shows preview of content
-  private defaultOptionDescriptionRenderer(item: T, index: number): string {
-    if (typeof item === 'string') {
-      // Truncate string content for description
-      return item.length > 50 ? `${item.substring(0, 47)}...` : item;
-    }
-    
-    if (item && typeof item === 'object') {
-      // Try to find a title, name, or similar property
-      const obj = item as any;
-      if (obj.title) return typeof obj.title === 'string' ? obj.title : String(obj.title);
-      if (obj.name) return typeof obj.name === 'string' ? obj.name : String(obj.name);
-      if (obj.label) return typeof obj.label === 'string' ? obj.label : String(obj.label);
-      
-      // Fallback to showing object type
-      return `Object with ${Object.keys(obj).length} properties`;
-    }
-
-    return `Item ${index + 1}`;
   }
 
   protected buildComponents(): ActionRowBuilder<StringSelectMenuBuilder>[] {
@@ -251,7 +263,7 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
     // Validate new options
     ValidationUtils.validateSelectMenuOptions(newOptions);
 
-    // Update options
+    // Update basic options
     if (newOptions.placeholder !== undefined) {
       this.selectMenuOptions.placeholder = newOptions.placeholder;
     }
@@ -261,18 +273,57 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
     if (newOptions.maxValues !== undefined) {
       this.selectMenuOptions.maxValues = newOptions.maxValues;
     }
-    if (newOptions.optionLabelRenderer !== undefined) {
-      this.selectMenuOptions.optionLabelRenderer = newOptions.optionLabelRenderer;
-    }
-    if (newOptions.optionDescriptionRenderer !== undefined) {
-      this.selectMenuOptions.optionDescriptionRenderer = newOptions.optionDescriptionRenderer;
-    }
     if (newOptions.maxOptionsPerMenu !== undefined) {
       this.selectMenuOptions.maxOptionsPerMenu = newOptions.maxOptionsPerMenu;
       
       // Warn if totalPages exceeds new limit
       if (this.state.totalPages > newOptions.maxOptionsPerMenu) {
         console.warn(`Total pages (${this.state.totalPages}) exceeds new maxOptionsPerMenu (${newOptions.maxOptionsPerMenu}). Only first ${newOptions.maxOptionsPerMenu} pages will be accessible.`);
+      }
+    }
+
+    // Handle labeling system updates with same priority logic
+    const hasNewCustomLabels = newOptions.optionLabelRenderer !== undefined;
+    const hasNewCustomNumbers = newOptions.labelStyle === 'custom-numbers' || newOptions.customPrefix !== undefined;
+    const hasNewPageNumbers = newOptions.labelStyle === 'page-numbers';
+
+    if (hasNewCustomLabels) {
+      this.selectMenuOptions.labelStyle = 'custom-labels';
+      this.selectMenuOptions.optionLabelRenderer = newOptions.optionLabelRenderer!;
+      if (newOptions.optionDescriptionRenderer !== undefined) {
+        this.selectMenuOptions.optionDescriptionRenderer = newOptions.optionDescriptionRenderer;
+      }
+    } else if (hasNewCustomNumbers) {
+      this.selectMenuOptions.labelStyle = 'custom-numbers';
+      this.selectMenuOptions.customPrefix = newOptions.customPrefix || 'Section';
+      this.selectMenuOptions.customSuffix = newOptions.customSuffix || '';
+      this.selectMenuOptions.optionLabelRenderer = this.getDefaultOptionLabelRenderer(
+        'custom-numbers', 
+        this.selectMenuOptions.customPrefix, 
+        this.selectMenuOptions.customSuffix
+      );
+    } else if (hasNewPageNumbers) {
+      this.selectMenuOptions.labelStyle = 'page-numbers';
+      this.selectMenuOptions.customPrefix = '';
+      this.selectMenuOptions.customSuffix = '';
+      this.selectMenuOptions.optionLabelRenderer = this.getDefaultOptionLabelRenderer('page-numbers', '', '');
+    }
+
+    // Update description settings
+    if (newOptions.autoDescriptions !== undefined || newOptions.descriptionMaxLength !== undefined) {
+      if (newOptions.autoDescriptions !== undefined) {
+        this.selectMenuOptions.autoDescriptions = newOptions.autoDescriptions;
+      }
+      if (newOptions.descriptionMaxLength !== undefined) {
+        this.selectMenuOptions.descriptionMaxLength = newOptions.descriptionMaxLength;
+      }
+      
+      // Update description renderer if not using custom labels
+      if (this.selectMenuOptions.labelStyle !== 'custom-labels') {
+        this.selectMenuOptions.optionDescriptionRenderer = this.getDefaultOptionDescriptionRenderer(
+          this.selectMenuOptions.autoDescriptions,
+          this.selectMenuOptions.descriptionMaxLength
+        );
       }
     }
 
@@ -310,5 +361,20 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
   // Helper method to check if a specific page is accessible via select menu
   isPageAccessible(pageIndex: number): boolean {
     return pageIndex >= 0 && pageIndex < this.getAccessiblePageCount();
+  }
+
+  // Helper method to get current labeling system info
+  getLabelingSystemInfo(): {
+    style: 'page-numbers' | 'custom-numbers' | 'custom-labels';
+    prefix?: string;
+    suffix?: string;
+    isCustomRenderer: boolean;
+  } {
+    return {
+      style: this.selectMenuOptions.labelStyle,
+      prefix: this.selectMenuOptions.customPrefix || undefined,
+      suffix: this.selectMenuOptions.customSuffix || undefined,
+      isCustomRenderer: this.selectMenuOptions.labelStyle === 'custom-labels'
+    };
   }
 }

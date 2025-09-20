@@ -1,6 +1,6 @@
 /**
  * Type definitions for linx.js
- * Updated: Added convenience options for SelectMenuPaginator
+ * Updated: Better handling of SelectMenuPaginator labeling options
  */
 
 import { 
@@ -48,25 +48,52 @@ export interface ButtonPaginationOptions<T = any> extends BasePaginationOptions<
   showFirstLast?: boolean;
 }
 
-// Select menu-specific options with convenience features
+/**
+ * Select menu labeling options - ONLY USE ONE OF THESE THREE APPROACHES:
+ * 
+ * Option 1: Page Numbers (default)
+ * - labelStyle: 'page-numbers' (or omit entirely)
+ * - Results in: "Page 1", "Page 2", "Page 3"...
+ * 
+ * Option 2: Custom Numbers with Prefix
+ * - labelStyle: 'custom-numbers'
+ * - customPrefix: string (required) - e.g., "Chapter", "Level", "Step"
+ * - customSuffix?: string (optional) - e.g., "- Introduction"
+ * - Results in: "Chapter 1", "Level 2", "Step 3 - Introduction"...
+ * 
+ * Option 3: Fully Custom Labels
+ * - optionLabelRenderer: function (overrides everything else)
+ * - optionDescriptionRenderer?: function (optional)
+ * - Results in: whatever your function returns
+ * 
+ * If multiple approaches are specified, priority is: Custom Labels > Custom Numbers > Page Numbers
+ */
+
+// Select menu-specific options with three distinct labeling approaches
 export interface SelectMenuPaginationOptions<T = any> extends BasePaginationOptions<T> {
   placeholder?: string;
   customId?: string;
   minValues?: number;
   maxValues?: number;
-  
-  // Advanced customization (original options)
-  optionLabelRenderer?: (item: T, index: number) => string;
-  optionDescriptionRenderer?: (item: T, index: number) => string;
   maxOptionsPerMenu?: number;
   
-  // NEW: Intuitive labeling system
-  labelStyle?: 'page-numbers' | 'custom-numbers' | 'custom-labels';
-  customPrefix?: string; // Used with 'custom-numbers' (e.g., "Chapter", "Step", "Level")
-  customSuffix?: string; // Optional suffix for 'custom-numbers' (e.g., "Chapter 1 - Introduction")
+  // APPROACH 1: Page Numbers (default)
+  // Use labelStyle: 'page-numbers' or omit entirely
+  // Results in: "Page 1", "Page 2", etc.
   
-  // Auto descriptions
-  autoDescriptions?: boolean; // Automatically generate descriptions (default: true)
+  // APPROACH 2: Custom Numbers with Prefix
+  // Use these together for custom numbering
+  labelStyle?: 'page-numbers' | 'custom-numbers' | 'custom-labels';
+  customPrefix?: string; // Required when labelStyle is 'custom-numbers' (e.g., "Chapter", "Level", "Step")
+  customSuffix?: string; // Optional additional text (e.g., "- Introduction")
+  
+  // APPROACH 3: Fully Custom Labels
+  // Use these for complete control over labels and descriptions
+  optionLabelRenderer?: (item: T, index: number) => string;
+  optionDescriptionRenderer?: (item: T, index: number) => string;
+  
+  // Auto description settings (apply to approaches 1 & 2)
+  autoDescriptions?: boolean; // Automatically generate descriptions from data (default: true)
   descriptionMaxLength?: number; // Max length for auto descriptions (default: 50)
 }
 
@@ -108,7 +135,9 @@ export type LinxErrorType =
   | 'INVALID_INTERACTION'
   | 'PERMISSION_ERROR'
   | 'DISCORD_API_ERROR'
-  | 'VALIDATION_ERROR';
+  | 'VALIDATION_ERROR'
+  | 'COMPONENT_ERROR'
+  | 'RENDER_ERROR';
 
 // Plugin system (for future use)
 export interface LinxPlugin<T = any> {
@@ -118,4 +147,23 @@ export interface LinxPlugin<T = any> {
   onPageChange?: (paginator: any, newPage: number, oldPage: number) => void;
   onStart?: (paginator: any) => void;
   onEnd?: (paginator: any) => void;
+}
+
+// Type guards for select menu options validation
+export interface SelectMenuLabelingConfig {
+  usePageNumbers: boolean;
+  useCustomNumbers: boolean;
+  useCustomLabels: boolean;
+  hasConflicts: boolean;
+}
+
+// Helper type for select menu option validation
+export type SelectMenuLabelStyle = 'page-numbers' | 'custom-numbers' | 'custom-labels';
+
+// Enhanced validation result for select menu options
+export interface SelectMenuValidationResult {
+  finalStyle: SelectMenuLabelStyle;
+  warnings: string[];
+  errors: string[];
+  requiredFields: string[];
 }
