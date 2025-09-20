@@ -1,7 +1,5 @@
-/**
- * Type definitions for linx.js
- * Updated: Better handling of SelectMenuPaginator labeling options
- */
+//Type definitions for linx.js SelectMenuPaginator
+//Simplified labeling system with validation
 
 import { 
   CommandInteraction, 
@@ -12,22 +10,39 @@ import {
   ButtonStyle,
 } from 'discord.js';
 
-// Base interaction types that linx.js supports
+//Base interaction types that linx.js supports
 export type LinxInteraction = CommandInteraction | ButtonInteraction | StringSelectMenuInteraction;
 
-// Pagination data can be any type
+//Pagination data can be any type
 export type PaginationData<T = any> = T[];
 
-// Function to render each page - returns embed or string
+//Function to render each page - returns embed or string
 export type PageRenderer<T> = (item: T, index: number, array: T[]) => EmbedBuilder | string;
 
-// Button configuration - can be just label, just emoji, or both
-export type ButtonConfig = string | [string] | [string, string];
-
-// After timeout behavior
+//After timeout behavior
 export type AfterTimeoutBehavior = 'delete' | 'disable';
 
-// Base pagination options (shared by all paginators)
+//Custom label renderer function
+//Returns label (required) and optional description
+export type CustomLabelRenderer<T> = (item: T, index: number) => {
+  label: string;
+  description?: string;
+};
+
+//LabelOption - Choose ONE of these three approaches:
+//1. 'PageNumbers' (default) → "Page 1", "Page 2", "Page 3"...
+//2. ['CustomNumbers', prefix] → "Chapter 1", "Level 1", "Step 1"...
+//   ['CustomNumbers', prefix, suffix] → "Chapter 1 Summary" (prefix priority)
+//   ['CustomNumbers', '', suffix] → "1 Summary", "2 Summary"... (suffix only)
+//3. 'CustomLabels' → Use customLabelRenderer for full control
+export type LabelOption = 
+  | 'PageNumbers'                                           // Default: "Page 1", "Page 2"...
+  | ['CustomNumbers', string]                               // Prefix only: "Chapter 1"
+  | ['CustomNumbers', string, string]                       // Prefix + suffix: "Chapter 1 Summary"  
+  | ['CustomNumbers', '', string]                           // Suffix only: "1 Summary"
+  | 'CustomLabels';                                         // Use customLabelRenderer
+
+//Base pagination options (shared by all paginators)
 export interface BasePaginationOptions<T = any> {
   ephemeral?: boolean;
   timeout?: number;
@@ -37,7 +52,30 @@ export interface BasePaginationOptions<T = any> {
   afterTimeout?: AfterTimeoutBehavior;
 }
 
-// Button-specific options with new cleaner API
+//SelectMenuPaginator options with simplified labeling system
+export interface SelectMenuPaginationOptions<T = any> extends BasePaginationOptions<T> {
+  // Basic select menu configuration
+  placeholder?: string;
+  customId?: string;
+  minValues?: number;
+  maxValues?: number;
+  maxOptionsPerMenu?: number;
+  
+  // SIMPLIFIED LABELING SYSTEM - Use only ONE approach:
+  labelOption?: LabelOption;
+  
+  // Required when labelOption is 'CustomLabels'
+  customLabelRenderer?: CustomLabelRenderer<T>;
+  
+  // Auto description settings (applies to PageNumbers and CustomNumbers)
+  autoDescriptions?: boolean;
+  descriptionMaxLength?: number;
+}
+
+//Button configuration - can be just label, just emoji, or both
+export type ButtonConfig = string | [string] | [string, string];
+
+//Button-specific options
 export interface ButtonPaginationOptions<T = any> extends BasePaginationOptions<T> {
   previous?: ButtonConfig;
   next?: ButtonConfig;
@@ -48,56 +86,7 @@ export interface ButtonPaginationOptions<T = any> extends BasePaginationOptions<
   showFirstLast?: boolean;
 }
 
-/**
- * Select menu labeling options - ONLY USE ONE OF THESE THREE APPROACHES:
- * 
- * Option 1: Page Numbers (default)
- * - labelStyle: 'page-numbers' (or omit entirely)
- * - Results in: "Page 1", "Page 2", "Page 3"...
- * 
- * Option 2: Custom Numbers with Prefix
- * - labelStyle: 'custom-numbers'
- * - customPrefix: string (required) - e.g., "Chapter", "Level", "Step"
- * - customSuffix?: string (optional) - e.g., "- Introduction"
- * - Results in: "Chapter 1", "Level 2", "Step 3 - Introduction"...
- * 
- * Option 3: Fully Custom Labels
- * - optionLabelRenderer: function (overrides everything else)
- * - optionDescriptionRenderer?: function (optional)
- * - Results in: whatever your function returns
- * 
- * If multiple approaches are specified, priority is: Custom Labels > Custom Numbers > Page Numbers
- */
-
-// Select menu-specific options with three distinct labeling approaches
-export interface SelectMenuPaginationOptions<T = any> extends BasePaginationOptions<T> {
-  placeholder?: string;
-  customId?: string;
-  minValues?: number;
-  maxValues?: number;
-  maxOptionsPerMenu?: number;
-  
-  // APPROACH 1: Page Numbers (default)
-  // Use labelStyle: 'page-numbers' or omit entirely
-  // Results in: "Page 1", "Page 2", etc.
-  
-  // APPROACH 2: Custom Numbers with Prefix
-  // Use these together for custom numbering
-  labelStyle?: 'page-numbers' | 'custom-numbers' | 'custom-labels';
-  customPrefix?: string; // Required when labelStyle is 'custom-numbers' (e.g., "Chapter", "Level", "Step")
-  customSuffix?: string; // Optional additional text (e.g., "- Introduction")
-  
-  // APPROACH 3: Fully Custom Labels
-  // Use these for complete control over labels and descriptions
-  optionLabelRenderer?: (item: T, index: number) => string;
-  optionDescriptionRenderer?: (item: T, index: number) => string;
-  
-  // Auto description settings (apply to approaches 1 & 2)
-  autoDescriptions?: boolean; // Automatically generate descriptions from data (default: true)
-  descriptionMaxLength?: number; // Max length for auto descriptions (default: 50)
-}
-
-// Hybrid pagination options (combines buttons and select menu)
+//Hybrid pagination options (combines buttons and select menu)
 export interface HybridPaginationOptions<T = any> extends BasePaginationOptions<T> {
   enableButtons?: boolean;
   enableSelectMenu?: boolean;
@@ -108,7 +97,7 @@ export interface HybridPaginationOptions<T = any> extends BasePaginationOptions<
   layout?: 'buttons-top' | 'buttons-bottom' | 'select-top' | 'select-bottom';
 }
 
-// Event types that paginators can emit
+//Event types that paginators can emit
 export interface PaginationEvents<T = any> {
   pageChange: (newPage: number, oldPage: number, data: T) => void;
   start: (initialPage: number, data: T) => void;
@@ -117,7 +106,7 @@ export interface PaginationEvents<T = any> {
   error: (error: Error) => void;
 }
 
-// Paginator state
+//Paginator state
 export interface PaginatorState<T = any> {
   currentPage: number;
   totalPages: number;
@@ -128,7 +117,7 @@ export interface PaginatorState<T = any> {
   timeoutId?: NodeJS.Timeout;
 }
 
-// Error types
+//Error types
 export type LinxErrorType = 
   | 'TIMEOUT'
   | 'INVALID_DATA' 
@@ -139,7 +128,81 @@ export type LinxErrorType =
   | 'COMPONENT_ERROR'
   | 'RENDER_ERROR';
 
-// Plugin system (for future use)
+//Common data structure interface for select menu items
+export interface SelectMenuDataItem {
+  title?: string;
+  name?: string;
+  label?: string;
+  description?: string;
+  content?: string;
+  [key: string]: any;
+}
+
+//Pre-built interfaces for common use cases
+export interface HelpSection extends SelectMenuDataItem {
+  title: string;
+  content: string;
+  category?: string;
+}
+
+export interface UserLevel extends SelectMenuDataItem {
+  name: string;
+  level: number;
+  xp?: number;
+  benefits?: string;
+  requirements?: string;
+}
+
+export interface GameFeature extends SelectMenuDataItem {
+  name: string;
+  description: string;
+  icon?: string;
+  available?: boolean;
+}
+
+export interface DocumentationSection extends SelectMenuDataItem {
+  title: string;
+  content: string;
+  category: string;
+  tags?: string[];
+}
+
+//Internal configuration for label parsing (used by SelectMenuPaginator)
+export interface InternalLabelConfig {
+  type: 'page-numbers' | 'custom-numbers' | 'custom-labels';
+  prefix?: string;
+  suffix?: string;
+  customRenderer?: CustomLabelRenderer<any>;
+}
+
+//Label configuration info for debugging
+export interface LabelConfigurationInfo {
+  type: 'page-numbers' | 'custom-numbers' | 'custom-labels';
+  prefix?: string;
+  suffix?: string;
+  hasCustomRenderer: boolean;
+}
+
+//Helper type for select menu label styles
+export type SelectMenuLabelStyle = 'page-numbers' | 'custom-numbers' | 'custom-labels';
+
+//Validation result interface
+export interface SelectMenuValidationResult {
+  finalStyle: SelectMenuLabelStyle;
+  warnings: string[];
+  errors: string[];
+  requiredFields: string[];
+}
+
+//Configuration validation interface
+export interface SelectMenuLabelingConfig {
+  usePageNumbers: boolean;
+  useCustomNumbers: boolean;
+  useCustomLabels: boolean;
+  hasConflicts: boolean;
+}
+
+//Plugin system (for future use)
 export interface LinxPlugin<T = any> {
   name: string;
   version: string;
@@ -149,21 +212,18 @@ export interface LinxPlugin<T = any> {
   onEnd?: (paginator: any) => void;
 }
 
-// Type guards for select menu options validation
-export interface SelectMenuLabelingConfig {
-  usePageNumbers: boolean;
-  useCustomNumbers: boolean;
-  useCustomLabels: boolean;
-  hasConflicts: boolean;
-}
-
-// Helper type for select menu option validation
-export type SelectMenuLabelStyle = 'page-numbers' | 'custom-numbers' | 'custom-labels';
-
-// Enhanced validation result for select menu options
-export interface SelectMenuValidationResult {
-  finalStyle: SelectMenuLabelStyle;
-  warnings: string[];
-  errors: string[];
-  requiredFields: string[];
+//@deprecated Use SelectMenuPaginationOptions instead
+export interface LegacySelectMenuPaginationOptions<T = any> extends BasePaginationOptions<T> {
+  placeholder?: string;
+  customId?: string;
+  minValues?: number;
+  maxValues?: number;
+  maxOptionsPerMenu?: number;
+  labelStyle?: 'page-numbers' | 'custom-numbers' | 'custom-labels';
+  customPrefix?: string;
+  customSuffix?: string;
+  optionLabelRenderer?: (item: T, index: number) => string;
+  optionDescriptionRenderer?: (item: T, index: number) => string;
+  autoDescriptions?: boolean;
+  descriptionMaxLength?: number;
 }
