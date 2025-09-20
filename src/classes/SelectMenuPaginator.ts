@@ -13,7 +13,9 @@ import {
   PaginationData, 
   SelectMenuPaginationOptions,
   LabelOption,
-  CustomLabelRenderer
+  CustomLabelRenderer,
+  PageRenderer,
+  AfterTimeoutBehavior
 } from '../types';
 import { getLinxConfig } from '../config';
 import { DEFAULT_SELECT_MENU, CUSTOM_IDS } from '../constants/defaults';
@@ -21,7 +23,10 @@ import { ValidationUtils } from '../utils/validation';
 import { ErrorHandler } from '../utils/errorHandler';
 
 export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
-  private selectMenuOptions: Required<SelectMenuPaginationOptions<T>>;
+  private selectMenuOptions: Omit<Required<SelectMenuPaginationOptions<T>>, 'customLabelRenderer'> & {
+    customLabelRenderer?: CustomLabelRenderer<T>;
+  };
+  
   private labelConfig: {
     type: 'page-numbers' | 'custom-numbers' | 'custom-labels';
     prefix?: string;
@@ -72,7 +77,7 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
       
       // Label and description settings
       labelOption: options.labelOption ?? 'PageNumbers',
-      customLabelRenderer: options.customLabelRenderer ?? undefined,
+      customLabelRenderer: options.customLabelRenderer,
       autoDescriptions: options.autoDescriptions ?? true,
       descriptionMaxLength: options.descriptionMaxLength ?? 50
     };
@@ -436,7 +441,9 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
   }
 
   //Gets current select menu options (read-only)
-  getSelectMenuOptions(): Readonly<Required<SelectMenuPaginationOptions<T>>> {
+  getSelectMenuOptions(): Readonly<Omit<Required<SelectMenuPaginationOptions<T>>, 'customLabelRenderer'> & {
+    customLabelRenderer?: CustomLabelRenderer<T>;
+  }> {
     return Object.freeze({ ...this.selectMenuOptions });
   }
 

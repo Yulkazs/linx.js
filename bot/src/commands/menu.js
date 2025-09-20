@@ -1,5 +1,5 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const { SelectMenuPaginator } = require('../classes/SelectMenuPaginator');
+const { SlashCommandBuilder } = require('discord.js');
+const { SelectMenuPaginator } = require('../../../dist/index.js');
 
 // Help sections data
 const helpSections = [
@@ -37,10 +37,12 @@ module.exports = {
   async execute(interaction) {
     try {
       const paginator = new SelectMenuPaginator(interaction, helpSections, {
-        labelOption: ['CustomNumbers', 'Guide'], // Single labeling option
-        placeholder: 'Select a guide to read...',
+        labelOption: 'PageNumbers', // Simple page numbering: "Page 1", "Page 2", etc.
+        placeholder: 'Select a page to read...',
+        autoDescriptions: true, // Automatically generate descriptions from the data
+        descriptionMaxLength: 50, // Limit description length
         pageRenderer: (section, index) => {
-          return `📚 **Guide ${index + 1}: ${section.title}**\n\n${section.content}`;
+          return `📚 **Page ${index + 1}: ${section.title}**\n\n${section.content}`;
         }
       });
 
