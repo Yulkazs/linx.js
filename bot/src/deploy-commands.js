@@ -4,11 +4,13 @@ require('dotenv').config();
 // Import commands
 const pingCommand = require('./commands/ping');
 const buttonCommand = require('./commands/button');
+const menuCommand = require('./commands/menu');
 
 // Collect all commands
 const commands = [
     pingCommand.data.toJSON(),
     buttonCommand.data.toJSON(),
+    menuCommand.data.toJSON()
 ];
 
 // Construct and prepare an instance of the REST module

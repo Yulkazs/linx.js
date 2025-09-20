@@ -1,4 +1,0 @@
-
-- Button Next: First the text then the emoji
-- timeout goes by default for deleting > disabling buttons
-- first and last buttons not visible

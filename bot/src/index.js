@@ -20,6 +20,9 @@ client.commands.set(pingCommand.data.name, pingCommand);
 const buttonCommand = require('./commands/button');
 client.commands.set(buttonCommand.data.name, buttonCommand);
 
+const menuCommand = require('./commands/menu');
+client.commands.set(menuCommand.data.name, menuCommand);
+
 // Import events
 const readyEvent = require('./events/ready');
 const interactionCreateEvent = require('./events/interactionCreate');

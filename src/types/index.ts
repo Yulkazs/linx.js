@@ -1,6 +1,6 @@
 /**
  * Type definitions for linx.js
- * Updated: Added showFirstLast option for ButtonPaginationOptions
+ * Updated: Added convenience options for SelectMenuPaginator
  */
 
 import { 
@@ -45,20 +45,29 @@ export interface ButtonPaginationOptions<T = any> extends BasePaginationOptions<
   last?: ButtonConfig;
   buttonStyle?: ButtonStyle;
   showPageCounter?: boolean;
-  showFirstLast?: boolean; // New option to enable first/last buttons
+  showFirstLast?: boolean;
 }
 
-// Select menu-specific options
+// Select menu-specific options with convenience features
 export interface SelectMenuPaginationOptions<T = any> extends BasePaginationOptions<T> {
   placeholder?: string;
   customId?: string;
   minValues?: number;
   maxValues?: number;
   
+  // Advanced customization (original options)
   optionLabelRenderer?: (item: T, index: number) => string;
   optionDescriptionRenderer?: (item: T, index: number) => string;
-
   maxOptionsPerMenu?: number;
+  
+  // NEW: Intuitive labeling system
+  labelStyle?: 'page-numbers' | 'custom-numbers' | 'custom-labels';
+  customPrefix?: string; // Used with 'custom-numbers' (e.g., "Chapter", "Step", "Level")
+  customSuffix?: string; // Optional suffix for 'custom-numbers' (e.g., "Chapter 1 - Introduction")
+  
+  // Auto descriptions
+  autoDescriptions?: boolean; // Automatically generate descriptions (default: true)
+  descriptionMaxLength?: number; // Max length for auto descriptions (default: 50)
 }
 
 // Hybrid pagination options (combines buttons and select menu)
