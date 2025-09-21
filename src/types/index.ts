@@ -23,26 +23,19 @@ export type PageRenderer<T> = (item: T, index: number, array: T[]) => EmbedBuild
 export type AfterTimeoutBehavior = 'delete' | 'disable';
 
 //Custom label renderer function
-//Returns label (required) and optional description
 export type CustomLabelRenderer<T> = (item: T, index: number) => {
   label: string;
   description?: string;
 };
 
-//LabelOption - Choose ONE of these three approaches:
-//1. 'PageNumbers' (default) → "Page 1", "Page 2", "Page 3"...
-//2. ['CustomNumbers', prefix] → "Chapter 1", "Level 1", "Step 1"...
-//   ['CustomNumbers', prefix, suffix] → "Chapter 1 Summary" (prefix priority)
-//   ['CustomNumbers', '', suffix] → "1 Summary", "2 Summary"... (suffix only)
-//3. 'CustomLabels' → Use customLabelRenderer for full control
 export type LabelOption = 
-  | 'PageNumbers'                                           // Default: "Page 1", "Page 2"...
-  | ['CustomNumbers', string]                               // Prefix only: "Chapter 1"
-  | ['CustomNumbers', string, string]                       // Prefix + suffix: "Chapter 1 Summary"  
-  | ['CustomNumbers', '', string]                           // Suffix only: "1 Summary"
-  | 'CustomLabels';                                         // Use customLabelRenderer
+  | 'PageNumbers'  
+  | ['CustomNumbers', string]       
+  | ['CustomNumbers', string, string]                       
+  | ['CustomNumbers', '', string]                          
+  | 'CustomLabels';                                         
 
-//Base pagination options (shared by all paginators)
+//Base pagination options
 export interface BasePaginationOptions<T = any> {
   ephemeral?: boolean;
   timeout?: number;
@@ -60,8 +53,6 @@ export interface SelectMenuPaginationOptions<T = any> extends BasePaginationOpti
   minValues?: number;
   maxValues?: number;
   maxOptionsPerMenu?: number;
-  
-  // SIMPLIFIED LABELING SYSTEM - Use only ONE approach:
   labelOption?: LabelOption;
   
   // Required when labelOption is 'CustomLabels'
@@ -212,7 +203,6 @@ export interface LinxPlugin<T = any> {
   onEnd?: (paginator: any) => void;
 }
 
-//@deprecated Use SelectMenuPaginationOptions instead
 export interface LegacySelectMenuPaginationOptions<T = any> extends BasePaginationOptions<T> {
   placeholder?: string;
   customId?: string;

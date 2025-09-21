@@ -31,7 +31,7 @@ const helpSections = [
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('help')
+    .setName('menu')
     .setDescription('Get help with bot features and commands'),
 
   async execute(interaction) {

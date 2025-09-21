@@ -23,6 +23,10 @@ client.commands.set(buttonCommand.data.name, buttonCommand);
 const menuCommand = require('./commands/menu');
 client.commands.set(menuCommand.data.name, menuCommand);
 
+const hybridCommand = require('./commands/hybrid');
+client.commands.set(hybridCommand.data.name, hybridCommand);
+
+
 // Import events
 const readyEvent = require('./events/ready');
 const interactionCreateEvent = require('./events/interactionCreate');

@@ -178,7 +178,6 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
           // Suffix only
           return `${pageNumber} ${this.labelConfig.suffix}`;
         } else {
-          // Fallback (shouldn't happen due to validation)
           return `${pageNumber}`;
         }
         
@@ -193,7 +192,6 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
           }
           return result.label.trim();
         }
-        // Fallback (shouldn't happen due to validation)
         return `Page ${pageNumber}`;
         
       default:
@@ -263,7 +261,7 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
         const label = this.generateOptionLabel(item, i);
         const description = this.generateOptionDescription(item, i);
         
-        // Validate label length (Discord limit)
+        // Validate label length
         if (label.length > 100) {
           throw ErrorHandler.validation(
             `option[${i}].label`, 
@@ -281,7 +279,7 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
         if (description && description.trim()) {
           const trimmedDesc = description.trim();
           
-          // Validate description length (Discord limit)
+          // Validate description length
           if (trimmedDesc.length > 100) {
             option.setDescription(`${trimmedDesc.substring(0, 97)}...`);
           } else {
@@ -344,7 +342,7 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
       // Get the selected page
       const selectedValues = componentInteraction.values;
       if (selectedValues.length === 0) {
-        return; // No selection made
+        return;
       }
 
       const selectedPage = parseInt(selectedValues[0], 10);
@@ -367,7 +365,7 @@ export class SelectMenuPaginator<T = any> extends BasePaginator<T> {
     }
   }
 
-  //Updates select menu options dynamically (for active paginators)
+  //Updates select menu options dynamically
   updateSelectMenuOptions(newOptions: Partial<SelectMenuPaginationOptions<T>>): void {
     if (!this.state.isActive) {
       throw ErrorHandler.validation('paginator', 'inactive', 'active paginator');
